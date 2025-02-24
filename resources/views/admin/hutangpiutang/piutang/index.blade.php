@@ -36,6 +36,7 @@
                                 <th scope="col">Tanggal Jatuh Tempo</th>
                                 <th scope="col">Pengingat</th>
                                 <th scope="col">Foto Nota</th>
+                                <th scope="col">Status</th> <!-- Kolom Status -->
                                 <th scope="col">Aksi</th>
                             </tr>
                         </thead>
@@ -54,6 +55,7 @@
                                         <span>Tidak ada nota</span>
                                     @endif
                                 </td>
+                                <td>{{ $credit->status }}</td> <!-- Menampilkan status piutang -->
                                 <td>
                                     <a href="{{ route('piutang.edit', $credit->id) }}" class="btn btn-warning btn-sm">Edit</a>
                                     <form action="{{ route('piutang.destroy', $credit->id) }}" method="POST" style="display:inline;">
@@ -61,11 +63,17 @@
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus piutang ini?')">Hapus</button>
                                     </form>
+                                    <form action="{{ route('piutang.markAsPaid', $credit->id) }}" method="POST" style="display:inline;">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-info btn-sm">Tandai Terbayar</button>
+                                    </form>
+                                    <a href="https://wa.me/?text=Pengingat%20pembayaran%20piutang%20dari%20{{ urlencode($credit->debtor) }}%20sebesar%20Rp%20{{ urlencode(number_format($credit->amount, 2, ',', '.')) }}%20jatuh%20tempo%20pada%20{{ urlencode($credit->due_date) }}" class="btn btn-success btn-sm" target="_blank">Kirim Pengingat WhatsApp</a>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center">Tidak ada piutang yang ditemukan.</td>
+                                <td colspan="8" class="text-center">Tidak ada piutang yang ditemukan.</td>
                             </tr>
                             @endforelse
                         </tbody>

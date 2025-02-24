@@ -1,6 +1,6 @@
 @extends('templates.app')
 
-@section('title', ' Dashboard') ')
+@section('title', ' Dashboard') 
 <script src="https://code.highcharts.com/highcharts.js"></script>
 
 @section('content')

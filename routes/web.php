@@ -119,6 +119,14 @@ Route::get('/laporan-keuangan', [FinancialReportController::class, 'index'])
 
 // HUTANG
 
+Route::patch('/hutang/mark-as-paid/{id}', [DebtController::class, 'markAsPaid'])
+    ->middleware(['auth', 'verified'])
+    ->name('hutang.markAsPaid');
+
+Route::patch('/piutang/mark-as-paid/{id}', [CreditController::class, 'markAsPaid'])
+    ->middleware(['auth', 'verified'])
+    ->name('piutang.markAsPaid');
+
 // Rute untuk menampilkan formulir create hutang
 Route::get('/tambah_hutang', [DebtController::class, 'create'])
     ->middleware(['auth', 'verified'])
@@ -185,13 +193,23 @@ Route::delete('/piutang/delete/{id}', [CreditController::class, 'destroy'])
 //      return view('admin.hutangpiutang.piutang.index');
 // });
 
+
+// ocr
+
+Route::get('/ocr', function () {
+    return view('admin.transaksi.pemasukan.ocr');
+})->middleware(['auth', 'verified'])->name('ocr');
+
+
+use App\Http\Controllers\OCRController;
+
+Route::post('/ocr-extract', [OCRController::class, 'extractText']);
+
 Route::get('/grafik', function () {
     return view('admin.laporankeuangan.grafiktrenkeuangan.index');
 });
 
-Route::get('/pengingat_pembayaran', function () {
-    return view('admin.pengingatpembayaran.index');
-});
+
 
 Route::get('/fitur_tambahan', function () {
     return view('admin.fiturtambahan.index');

@@ -15,6 +15,7 @@ class Debt extends Model
         'creditor',
         'due_date',
         'reminder_date', // Jika Anda juga menyimpan pengingat
-        'receipt', // Tambahkan receipt di sini
+        'receipt',
+        'status', // Tambahkan receipt di sini
     ];
 }

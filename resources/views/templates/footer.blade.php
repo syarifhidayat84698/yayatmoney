@@ -1,6 +1,6 @@
 <footer>
     <div class="footer-area">
-        <p>© Copyright 2018. All rights reserved. Template by <a href="https://colorlib.com/wp/">Colorlib</a>.</p>
+        <p>© Copyright 2025. All right reserved. Developed by <a href="https://www.instagram.com/syarifhidayat956/">Hidayat Collection</a>.</p>
     </div>
 </footer>
 <script src="{{ asset('assets/js/vendor/jquery-2.2.4.min.js') }}"></script>

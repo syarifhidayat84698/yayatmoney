@@ -1,58 +1,72 @@
 @extends('templates.app')
 
 @section('title', 'Pemasukan')
-<script src="https://code.highcharts.com/highcharts.js"></script>
+
 @section('content')
 <div class="container mt-5">
-    <h1 class="mb-4">Pemasukan</h1>
+    <h1 class="mb-4 text-center">💰 Pemasukan</h1>
     
     @if (session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
+        <script>
+            Swal.fire({
+                icon: "success",
+                title: "✅ Berhasil!",
+                text: "{{ session('success') }}",
+                confirmButtonColor: "#28a745"
+            });
+        </script>
     @endif
 
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <a href="{{ route('tambah_pemasukan') }}" class="btn btn-primary px-2 py-2">Tambah Pemasukan</a>
-            <a href="{{ route('tambah_pemasukan') }}" class="btn btn-primary px-2 py-2">Scan Nota</a>
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <a href="{{ route('tambah_pemasukan') }}" class="btn btn-primary px-3 py-2">
+                ➕ Tambah Pemasukan
+            </a>
+            <a href="{{ route('ocr') }}" class="btn btn-secondary px-3 py-2">
+                📄 Scan Nota
+            </a>
         </div>
     </div>
-    <div class="row">
-        <table class="table">
-            <thead>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-dark">
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Tanggal</th>
-                    <th scope="col">Jumlah Pendapatan</th>
-                    <th scope="col">Kategori</th>
-                    <th scope="col">Sumber</th> <!-- Tambahkan kolom sumber -->
-                    <th scope="col">Deskripsi</th>
-                    <th scope="col">Foto Nota</th>
-                    <th scope="col">Aksi</th>
+                    <th>#</th>
+                    <th>No Tagihan</th>
+                    <th>Nama</th>
+                    <th>Tanggal</th>
+                    <th>Jumlah Pendapatan</th>
+                    <th>Foto Nota</th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($transactions as $transaction)
                 <tr>
-                    <th scope="row">{{ $loop->iteration }}</th>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $transaction->nomor_tagihan }}</td>
+                    <td>{{ $transaction->nama_customer }}</td>
                     <td>{{ $transaction->transaction_date }}</td>
-                    <td>{{ number_format($transaction->amount, 2, ',', '.') }}</td>
-                    <td>{{ $transaction->type }}</td>
-                    <td>{{ $transaction->sumber }}</td> <!-- Tampilkan sumber -->
-                    <td>{{ $transaction->description }}</td>
+                    <td><strong>Rp {{ number_format($transaction->amount, 2, ',', '.') }}</strong></td>
                     <td>
                         @if ($transaction->receipt)
-                            <img src="{{ asset('storage/' . $transaction->receipt) }}" alt="Nota" style="width: 100px; height: auto;">
+                            <a href="{{ asset('storage/' . $transaction->receipt) }}" target="_blank">
+                                <img src="{{ asset('storage/' . $transaction->receipt) }}" alt="Nota" style="width: 100px; height: auto; border-radius: 5px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);">
+                            </a>
+                            <br>
+                            <a href="{{ asset('storage/' . $transaction->receipt) }}" download class="btn btn-sm btn-success mt-2">
+                                ⬇️ Download
+                            </a>
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('transaksi.edit', $transaction->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                        <form action="{{ route('transaksi.destroy', $transaction->id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">Hapus</button>
-                        </form>
+                        <a href="{{ route('transaksi.edit', $transaction->id) }}" class="btn btn-warning btn-sm">
+                            ✏️ Edit
+                        </a>
+                        <button onclick="confirmDelete({{ $transaction->id }})" class="btn btn-danger btn-sm">
+                            🗑 Hapus
+                        </button>
                     </td>
                 </tr>
                 @endforeach
@@ -60,5 +74,64 @@
         </table>
     </div>
 </div>
-<script src="https://code.highcharts.com/10/highcharts.js"></script>
+
+<!-- Include SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function confirmDelete(transactionId) {
+        Swal.fire({
+            title: "⚠️ Hapus Transaksi?",
+            text: "Data ini akan dihapus secara permanen!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Ya, Hapus!",
+            cancelButtonText: "Batal"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                fetch("{{ url('/transaksi/delete') }}/" + transactionId, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRF-TOKEN": csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        Swal.fire({
+                            icon: "success",
+                            title: "✅ Berhasil!",
+                            text: "Transaksi berhasil dihapus.",
+                            confirmButtonColor: "#28a745"
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "❌ Gagal!",
+                            text: "Terjadi kesalahan saat menghapus transaksi.",
+                            confirmButtonColor: "#dc3545"
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "❌ Kesalahan Server",
+                        text: "Tidak dapat menghapus transaksi saat ini.",
+                        confirmButtonColor: "#dc3545"
+                    });
+                });
+            }
+        });
+    }
+</script>
+
+
 @endsection

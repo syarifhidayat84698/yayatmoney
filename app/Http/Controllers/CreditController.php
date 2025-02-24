@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Storage;
 
 class CreditController extends Controller
 {
+    // Menampilkan form untuk menambah piutang
     public function create()
     {
         return view('admin.hutangpiutang.piutang.create');
     }
 
+    // Menyimpan data piutang
     public function store(Request $request)
     {
         $request->validate([
@@ -22,6 +24,7 @@ class CreditController extends Controller
             'tanggalJatuhTempo' => 'required|date',
             'pengingat' => 'nullable|date',
             'nota' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'status' => 'required|string|in:Belum Terbayar,Terbayar', // Validasi status
         ]);
 
         $receiptPath = null;
@@ -36,23 +39,27 @@ class CreditController extends Controller
             'due_date' => $request->tanggalJatuhTempo,
             'reminder_date' => $request->pengingat,
             'receipt' => $receiptPath,
+            'status' => $request->status, // Menyimpan status
         ]);
 
         return redirect()->route('piutang.index')->with('success', 'Piutang berhasil ditambahkan!');
     }
 
+    // Menampilkan daftar piutang
     public function index()
     {
         $credits = Credit::where('user_id', Auth::id())->get();
         return view('admin.hutangpiutang.piutang.index', compact('credits'));
     }
 
+    // Menampilkan form untuk mengedit piutang
     public function edit($id)
     {
         $credit = Credit::findOrFail($id);
         return view('admin.hutangpiutang.piutang.edit', compact('credit'));
     }
 
+    // Memperbarui data piutang
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -61,6 +68,7 @@ class CreditController extends Controller
             'tanggalJatuhTempo' => 'required|date',
             'pengingat' => 'nullable|date',
             'nota' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'status' => 'required|string|in:Belum Terbayar,Terbayar', // Validasi status
         ]);
 
         $credit = Credit::findOrFail($id);
@@ -80,11 +88,13 @@ class CreditController extends Controller
             'due_date' => $request->tanggalJatuhTempo,
             'reminder_date' => $request->pengingat,
             'receipt' => $receiptPath,
+            'status' => $request->status, // Memperbarui status
         ]);
 
         return redirect()->route('piutang.index')->with('success', 'Piutang berhasil diperbarui!');
     }
 
+    // Menghapus piutang
     public function destroy($id)
     {
         $credit = Credit::findOrFail($id);
@@ -94,5 +104,15 @@ class CreditController extends Controller
         $credit->delete();
 
         return redirect()->route('piutang.index')->with('success', 'Piutang berhasil dihapus!');
+    }
+
+    // Menandai piutang sebagai terbayar
+    public function markAsPaid($id)
+    {
+        $credit = Credit::findOrFail($id);
+        $credit->status = 'Terbayar';
+        $credit->save();
+
+        return redirect()->route('piutang.index')->with('success', 'Piutang berhasil ditandai sebagai terbayar!');
     }
 }

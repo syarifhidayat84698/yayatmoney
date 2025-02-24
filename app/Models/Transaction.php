@@ -20,5 +20,9 @@ class Transaction extends Model
         'transaction_date',
         'sumber',
         'receipt',
+        'nomor_tagihan',
+        'nama_customer',
+        'nomor_whatsapp',
+        
     ];
 }

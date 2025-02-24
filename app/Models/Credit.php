@@ -16,5 +16,6 @@ class Credit extends Model
         'due_date',
         'reminder_date',
         'receipt',
+        'status',
     ];
 }

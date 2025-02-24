@@ -47,6 +47,7 @@
                     <th scope="col">Tanggal Jatuh Tempo</th>
                     <th scope="col">Pengingat</th>
                     <th scope="col">Foto Nota</th> <!-- Kolom Foto Nota -->
+                    <th scope="col">Status</th> <!-- Kolom Status -->
                     <th scope="col">Aksi</th> <!-- Kolom Aksi -->
                 </tr>
             </thead>
@@ -65,13 +66,20 @@
                             <span>Tidak ada nota</span>
                         @endif
                     </td>
+                    <td>{{ $debt->status }}</td> <!-- Menampilkan status hutang -->
                     <td>
-                        <a href="{{ route('hutang.edit', $debt->id) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <                        <a href="{{ route('hutang.edit', $debt->id) }}" class="btn btn-warning btn-sm">Edit</a>
                         <form action="{{ route('hutang.destroy', $debt->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus hutang ini?')">Hapus</button>
                         </form>
+                        <form action="{{ route('hutang.markAsPaid', $debt->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-info btn-sm">Tandai Terbayar</button>
+                        </form>
+                        <a href="https://wa.me/?text=Pengingat%20pembayaran%20hutang%20dari%20{{ urlencode($debt->creditor) }}%20sebesar%20Rp%20{{ urlencode(number_format($debt->amount, 2, ',', '.')) }}%20jatuh%20tempo%20pada%20{{ urlencode($debt->due_date) }}" class="btn btn-success btn-sm" target="_blank">Kirim Pengingat WhatsApp</a>
                     </td>
                 </tr>
                 @endforeach

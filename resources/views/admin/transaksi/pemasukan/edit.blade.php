@@ -19,15 +19,6 @@
             <input type="date" class="form-control" id="date" name="date" value="{{ $transaction->transaction_date }}" required>
         </div>
         
-        <div class="mb-3">
-            <label for="description" class="form-label">Deskripsi</label>
-            <textarea class="form-control" id="description" name="description" rows="3">{{ $transaction->description }}</textarea>
-        </div>
-        
-        <div class="mb-3">
-            <label for="sumber" class="form-label">Sumber Penghasilan</label>
-            <input type="text" class="form-control" id="sumber" name="sumber" value="{{ $transaction->sumber }}" required>
-        </div>
         
         <div class="mb-3">
             <label for="receipt" class="form-label">Upload Foto Nota</label>

@@ -67,8 +67,6 @@ class TransactionController extends Controller
         $request->validate([
             'amount' => 'required|numeric',
             'date' => 'required|date',
-            'description' => 'nullable|string',
-            'sumber' => 'required|string|max:255', // Validasi untuk sumber
             'receipt' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -84,8 +82,6 @@ class TransactionController extends Controller
         $transaction->update([
             'amount' => $request->amount,
             'type' => 'income', // Anda bisa menyesuaikan ini jika ada pilihan
-            'description' => $request->description,
-            'sumber' => $request->sumber, // Simpan sumber
             'transaction_date' => $request->date,
             'receipt' => $receiptPath,
         ]);
@@ -95,10 +91,22 @@ class TransactionController extends Controller
 
     // Metode untuk menghapus transaksi
     public function destroy($id)
-    {
-        $transaction = Transaction::findOrFail($id); // Ambil transaksi berdasarkan ID
-        $transaction->delete(); // Hapus transaksi
-
-        return redirect()->route('pemasukan')->with('success', 'Transaksi berhasil dihapus!');
+{
+    $transaction = Transaction::find($id);
+    if (!$transaction) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Transaksi tidak ditemukan'
+        ], 404);
     }
+
+    // Hapus transaksi
+    $transaction->delete();
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Transaksi berhasil dihapus'
+    ], 200);
+}
+
 }

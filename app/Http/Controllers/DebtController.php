@@ -108,4 +108,13 @@ class DebtController extends Controller
 
         return redirect()->route('hutang.index')->with('success', 'Hutang berhasil dihapus!');
     }
+
+    public function markAsPaid($id)
+    {
+        $debt = Debt::findOrFail($id);
+        $debt->status = 'Terbayar';
+        $debt->save();
+
+        return redirect()->route('hutang.index')->with('success', 'Hutang berhasil ditandai sebagai terbayar!');
+    }
 }
