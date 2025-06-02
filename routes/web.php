@@ -7,7 +7,15 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinancialReportController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\CreditController;
+use App\Http\Controllers\InputController;
+use App\Http\Controllers\NotaController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BarangController;
+use App\Models\Input;
+use App\Http\Controllers\OCRController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\HutangController;
+use App\http\Controllers\LaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,30 +37,113 @@ Route::get('/test', function () {
     return view('admin.dashboard.index');
 });
 
-
-
+// barang
+Route::resource('barangs', BarangController::class)
+    ->middleware(['auth', 'verified'])
+    ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
 // Rute untuk data user
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('data-user', UserController::class);
 });
 
+// Laporan
+Route::get('/laporan/data_hutang', [LaporanController::class, 'dataHutang'])
+    ->middleware(['auth', 'verified'])
+    ->name('laporan.data_hutang');
+
+Route::get('/laporan/pemasukan', [LaporanController::class, 'pemasukan'])
+    ->middleware(['auth', 'verified'])
+    ->name('laporan.pemasukan');
+
+Route::get('/laporan/hutang', [LaporanController::class, 'hutang'])
+    ->middleware(['auth', 'verified'])
+    ->name('laporan.hutang');
+
+
+// Rute untuk ekspor PDF
+Route::get('/laporan/hutang/export', [LaporanController::class, 'exportHutangPDF'])->middleware(['auth', 'verified'])->name('laporan.hutang.export');
+Route::get('/laporan/pemasukan/export', [LaporanController::class, 'exportPemasukanPDF'])->middleware(['auth', 'verified'])->name('laporan.pemasukan.export');
+
+
+// customer
+Route::resource('customers', CustomerController::class)
+    ->middleware(['auth', 'verified'])
+    ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+// input
+// Rute untuk update status input
+Route::post('/input/updateStatus/{id}', [InputController::class, 'updateStatus'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.updateStatus');
+
+// Rute untuk update total bayar transaksi
+Route::patch('/input/updateTotalBayar/{id}', [InputController::class, 'updateTotalBayar'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.updateTotalBayar');
+
+// Rute untuk menampilkan daftar pemasukan
+Route::get('/input_nota/{id}', [InputController::class, 'createNota'])
+    ->name('nota.create');
+
+Route::get('/input', [InputController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('input');
+
+Route::get('/input_pemasukan', [InputController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('input_pemasukan');
+
+// Rute untuk menyimpan data pendapatan
+Route::post('/input_pendapatan', [InputController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.store');
+
+// Rute untuk menghapus transaksi
+Route::delete('/input/delete/{id}', [InputController::class, 'destroy'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.destroy');
+
+
+//    pop up
+Route::post('/hutangs/{hutang}/bayar', [HutangController::class, 'bayar'])
+->name('hutangs.bayar');
+
+// Rute untuk mendapatkan riwayat pembayaran
+Route::get('/hutangs/{id}/history', [HutangController::class, 'history'])
+->middleware(['auth', 'verified'])
+->name('hutangs.history');
+
+// Rute untuk menampilkan form edit faktur
+Route::get('/input/edit/{id}', [InputController::class, 'edit'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.edit');
+
+// Rute untuk memperbarui data faktur
+Route::put('/input/update/{id}', [InputController::class, 'update'])
+    ->middleware(['auth', 'verified'])
+    ->name('input.update');
+
+
+// HUTANG
+Route::resource('hutangs', HutangController::class)->middleware(['auth', 'verified']);
+
+
 // TRANSAKSI
-// PEMASUKAN
 // Rute untuk menyimpan data pendapatan
 Route::post('/pendapatan', [TransactionController::class, 'store'])
     ->middleware(['auth', 'verified'])
     ->name('transaksi.store'); // Ubah nama rute di sini
 
-// Rute untuk menampilkan daftar pemasukan
-Route::get('/pemasukan', [TransactionController::class, 'index'])
+// Rute untuk menampilkan daftar pengeluaran
+Route::get('/pengeluaran', [TransactionController::class, 'index'])
     ->middleware(['auth', 'verified'])
-    ->name('pemasukan');
+    ->name('pengeluaran');
 
-// Rute untuk menampilkan formulir create pendapatan
-Route::get('/tambah_pemasukan', [TransactionController::class, 'create'])
+// Rute untuk menampilkan formulir create pengeluaran
+Route::get('/tambah_pengeluaran', [TransactionController::class, 'create'])
     ->middleware(['auth', 'verified'])
-    ->name('tambah_pemasukan');
+    ->name('tambah_pengeluaran');
 
 // Rute untuk menyimpan data pendapatan
 Route::post('/pendapatan', [TransactionController::class, 'store'])
@@ -73,89 +164,6 @@ Route::patch('/transaksi/update/{id}', [TransactionController::class, 'update'])
 Route::delete('/transaksi/delete/{id}', [TransactionController::class, 'destroy'])
     ->middleware(['auth', 'verified'])
     ->name('transaksi.destroy');
-
-
-// TRANSAKSI
-// PENGELUARAN
-
-// Rute untuk menampilkan daftar pengeluaran
-Route::get('/pengeluaran', [ExpenseController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.index');
-
-// Rute untuk menampilkan formulir create pengeluaran
-Route::get('/tambah_pengeluaran', [ExpenseController::class, 'create'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.create');
-
-// Rute untuk menyimpan data pengeluaran
-Route::post('/pengeluaran', [ExpenseController::class, 'store'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.store');
-
-// Rute untuk menampilkan form edit pengeluaran
-Route::get('/pengeluaran/edit/{id}', [ExpenseController::class, 'edit'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.edit');
-
-// Rute untuk memperbarui data pengeluaran
-Route::patch('/pengeluaran/update/{id}', [ExpenseController::class, 'update'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.update');
-
-// Rute untuk menghapus pengeluaran
-Route::delete('/pengeluaran/delete/{id}', [ExpenseController::class, 'destroy'])
-    ->middleware(['auth', 'verified'])
-    ->name('pengeluaran.destroy');
-
-
-// LAPORAN KEUANGAN
-
-// Rute untuk menampilkan laporan keuangan
-Route::get('/laporan-keuangan', [FinancialReportController::class, 'index'])
-    ->middleware(['auth', 'verified'])->middleware('role:admin')
-    ->name('laporan.keuangan');
-
-
-// HUTANG
-
-Route::patch('/hutang/mark-as-paid/{id}', [DebtController::class, 'markAsPaid'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.markAsPaid');
-
-Route::patch('/piutang/mark-as-paid/{id}', [CreditController::class, 'markAsPaid'])
-    ->middleware(['auth', 'verified'])
-    ->name('piutang.markAsPaid');
-
-// Rute untuk menampilkan formulir create hutang
-Route::get('/tambah_hutang', [DebtController::class, 'create'])
-    ->middleware(['auth', 'verified'])
-    ->name('tambah_hutang');
-
-// Rute untuk menyimpan data hutang
-Route::post('/hutang', [DebtController::class, 'store'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.store');
-
-// Rute untuk menampilkan daftar hutang
-Route::get('/hutang', [DebtController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.index');
-
-// Rute untuk menampilkan form edit hutang
-Route::get('/hutang/edit/{id}', [DebtController::class, 'edit'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.edit');
-
-// Rute untuk memperbarui hutang
-Route::patch('/hutang/update/{id}', [DebtController::class, 'update'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.update');
-
-// Rute untuk menghapus hutang
-Route::delete('/hutang/delete/{id}', [DebtController::class, 'destroy'])
-    ->middleware(['auth', 'verified'])
-    ->name('hutang.destroy');
 
 
 // PIUTANG
@@ -201,50 +209,14 @@ Route::get('/ocr', function () {
 })->middleware(['auth', 'verified'])->name('ocr');
 
 
-use App\Http\Controllers\OCRController;
-
 Route::post('/ocr-extract', [OCRController::class, 'extractText']);
+Route::post('/ocr-save', [OCRController::class, 'saveTransaction'])->middleware(['auth', 'verified']);
 
-Route::get('/grafik', function () {
-    return view('admin.laporankeuangan.grafiktrenkeuangan.index');
-});
-
-
-
-Route::get('/fitur_tambahan', function () {
-    return view('admin.fiturtambahan.index');
-});
 
 // Rute untuk dashboard utama
 Route::get('/dashboard', function () {
     return view('admin/Dasboard/index');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Rute untuk Ecommerce Dashboard
-Route::get('/ecommerce-dashboard', function () {
-    return view('admin/index2'); // Mengarah ke view index2
-})->middleware(['auth', 'verified'])->name('ecommerce.dashboard');
-
-// Rute untuk ICO Dashboard
-Route::get('/ico-dashboard', function () {
-    return view('admin/index3'); // Mengarah ke view index2
-})->middleware(['auth', 'verified'])->name('ico.dashboard');
-
-
-// Rute untuk Bar Chart
-Route::get('bar', function () {
-    return view('admin/barchart'); // Mengarah ke view admin/barchart.blade.php
-})->middleware(['auth', 'verified'])->name('charts.bar');
-
-// Rute untuk Line Chart
-Route::get('line', function () {
-    return view('admin/linechart'); // Mengarah ke view admin/linechart.blade.php
-})->middleware(['auth', 'verified'])->name('charts.line');
-
-// Rute untuk Pie Chart
-Route::get('pie', function () {
-    return view('admin/piechart'); // Mengarah ke view admin/piechart.blade.php
-})->middleware(['auth', 'verified'])->name('charts.pie');
 
 Route::get('/pendapatan', function () {
     return view('admin/pendapatan'); // Mengarah ke view admin/piechart.blade.php
@@ -269,5 +241,8 @@ Route::middleware('auth')->group(function () {
 });
 
 
+
 // Memuat rute otentikasi
 require __DIR__ . '/auth.php';
+
+

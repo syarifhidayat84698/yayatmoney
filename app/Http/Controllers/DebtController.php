@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Debt;
+use App\Models\Input;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class DebtController extends Controller
 {
@@ -20,27 +19,23 @@ class DebtController extends Controller
     {
         // Validasi input
         $request->validate([
-            'pemberiPinjaman' => 'required|string|max:255',
-            'jumlahHutang' => 'required|numeric',
-            'tanggalJatuhTempo' => 'required|date',
-            'pengingat' => 'nullable|date',
-            'nota' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'nama_customer' => 'required|string|max:255',
+            'nomor_whatsapp' => 'required|string|max:15',
+            'due_date' => 'required|date',
+            'keterangan' => 'nullable|string',
+            'totalbayar' => 'required|numeric',
         ]);
 
-        // Menyimpan file jika ada
-        $receiptPath = null;
-        if ($request->hasFile('nota')) {
-            $receiptPath = $request->file('nota')->store('receipts', 'public');
-        }
-
         // Menyimpan hutang
-        Debt::create([
+        Input::create([
             'user_id' => Auth::id(),
-            'amount' => $request->jumlahHutang,
-            'creditor' => $request->pemberiPinjaman,
-            'due_date' => $request->tanggalJatuhTempo,
-            'reminder_date' => $request->pengingat,
-            'receipt' => $receiptPath,
+            'nomor_tagihan' => '',
+            'nama_customer' => $request->nama_customer,
+            'nomor_whatsapp' => $request->nomor_whatsapp,
+            'due_date' => $request->due_date,
+            'status' => 'Hutang',
+            'keterangan' => $request->keterangan,
+            'totalbayar' => $request->totalbayar,
         ]);
 
         return redirect()->route('hutang.index')->with('success', 'Hutang berhasil ditambahkan!');
@@ -49,14 +44,14 @@ class DebtController extends Controller
     // Menampilkan daftar hutang
     public function index()
     {
-        $debts = Debt::where('user_id', Auth::id())->get(); // Ambil hutang untuk pengguna yang sedang login
+        $debts = Input::where('user_id', Auth::id())->where('status', 'Hutang')->get(); // Ambil hutang untuk pengguna yang sedang login
         return view('admin.hutangpiutang.hutang.index', compact('debts'));
     }
 
     // Menampilkan form untuk mengedit hutang
     public function edit($id)
     {
-        $debt = Debt::findOrFail($id); // Ambil hutang berdasarkan ID
+        $debt = Input::findOrFail($id); // Ambil hutang berdasarkan ID
         return view('admin.hutangpiutang.hutang.edit', compact('debt')); // Kembalikan view edit dengan data hutang
     }
 
@@ -65,33 +60,22 @@ class DebtController extends Controller
     {
         // Validasi input
         $request->validate([
-            'pemberiPinjaman' => 'required|string|max:255',
-            'jumlahHutang' => 'required|numeric',
-            'tanggalJatuhTempo' => 'required|date',
-            'pengingat' => 'nullable|date',
-            'nota' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'nama_customer' => 'required|string|max:255',
+            'nomor_whatsapp' => 'required|string|max:15',
+            'due_date' => 'required|date',
+            'keterangan' => 'nullable|string',
+            'totalbayar' => 'required|numeric',
         ]);
 
-        $debt = Debt::findOrFail($id); // Ambil hutang berdasarkan ID
-
-        // Menyimpan file jika ada
-        $receiptPath = $debt->receipt; // Simpan path lama
-        if ($request->hasFile('nota')) {
-            // Jika ada file baru, simpan dan hapus file lama jika perlu
-            if ($receiptPath) {
-                Storage::disk('public')->delete($receiptPath);
-            }
-            $receiptPath = $request->file('nota')->store('receipts', 'public');
-        }
+        $debt = Input::findOrFail($id); // Ambil hutang berdasarkan ID
 
         // Memperbarui hutang
         $debt->update([
-            'amount' => $request->jumlahHutang,
-            'creditor' => $request->pemberiPinjaman,
-            'due_date' => $request->tanggalJatuhTempo,
-            'reminder_date' => $request->pengingat,
-            'receipt' => $receiptPath,
-            'updated_at' => now(),
+            'nama_customer' => $request->nama_customer,
+            'nomor_whatsapp' => $request->nomor_whatsapp,
+            'due_date' => $request->due_date,
+            'keterangan' => $request->keterangan,
+            'totalbayar' => $request->totalbayar,
         ]);
 
         return redirect()->route('hutang.index')->with('success', 'Hutang berhasil diperbarui!');
@@ -100,10 +84,7 @@ class DebtController extends Controller
     // Menghapus hutang
     public function destroy($id)
     {
-        $debt = Debt::findOrFail($id); // Ambil hutang berdasarkan ID
-        if ($debt->receipt) {
-            Storage::disk('public')->delete($debt->receipt); // Hapus file nota jika ada
-        }
+        $debt = Input::findOrFail($id); // Ambil hutang berdasarkan ID
         $debt->delete(); // Hapus hutang
 
         return redirect()->route('hutang.index')->with('success', 'Hutang berhasil dihapus!');
@@ -111,7 +92,7 @@ class DebtController extends Controller
 
     public function markAsPaid($id)
     {
-        $debt = Debt::findOrFail($id);
+        $debt = Input::findOrFail($id);
         $debt->status = 'Terbayar';
         $debt->save();
 

@@ -35,22 +35,23 @@ class TransactionController extends Controller
         Transaction::create([
             'user_id' => Auth::id(), // Mengaitkan dengan pengguna yang sedang login
             'amount' => $request->amount,
-            'type' => 'income', // Anda bisa menyesuaikan ini jika ada pilihan
+            'type' => 'outcome', // Anda bisa menyesuaikan ini jika ada pilihan
             'description' => $request->description,
             'sumber' => $request->sumber, // Simpan sumber
             'transaction_date' => $request->date,
             'receipt' => $receiptPath,
         ]);
 
-        return redirect()->route('pemasukan')->with('success', 'Transaksi berhasil ditambahkan!');
+        return redirect()->route('pengeluaran')->with('success', 'Transaksi berhasil ditambahkan!');
     }
 
     // Metode untuk menampilkan daftar transaksi
     public function index()
     {
         $transactions = Transaction::where('user_id', Auth::id())
-            ->where('type', 'income')
-            ->get(); // Ambil transaksi untuk pengguna yang sedang login
+            ->where('type', 'outcome')
+            ->orderBy('transaction_date', 'desc')
+            ->paginate(10); // Pagination 10 per page
         return view('admin.transaksi.pemasukan.index', compact('transactions'));
     }
 
@@ -81,32 +82,31 @@ class TransactionController extends Controller
         // Memperbarui transaksi
         $transaction->update([
             'amount' => $request->amount,
-            'type' => 'income', // Anda bisa menyesuaikan ini jika ada pilihan
+            'type' => 'outcome', // Anda bisa menyesuaikan ini jika ada pilihan
             'transaction_date' => $request->date,
             'receipt' => $receiptPath,
         ]);
 
-        return redirect()->route('pemasukan')->with('success', 'Transaksi berhasil diperbarui!');
+        return redirect()->route('pengeluaran')->with('success', 'Transaksi berhasil diperbarui!');
     }
 
     // Metode untuk menghapus transaksi
     public function destroy($id)
-{
-    $transaction = Transaction::find($id);
-    if (!$transaction) {
+    {
+        $transaction = Transaction::find($id);
+        if (!$transaction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Transaksi tidak ditemukan'
+            ], 404);
+        }
+
+        // Hapus transaksi
+        $transaction->delete();
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Transaksi tidak ditemukan'
-        ], 404);
+            'status' => 'success',
+            'message' => 'Transaksi berhasil dihapus'
+        ], 200);
     }
-
-    // Hapus transaksi
-    $transaction->delete();
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Transaksi berhasil dihapus'
-    ], 200);
-}
-
 }

@@ -1,50 +1,70 @@
 @extends('templates.app')
 
-@section('title', 'Tambah Pemasukan')
+@section('title', 'Tambah Pengeluaran')
 
 @section('content')
-<div class="container mt-5">
-    <h1 class="mb-4">Tambah Pemasukan</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Tambah Pengeluaran</h4>
+                </div>
+                <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger mb-4">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+                    <form action="{{ route('pendapatan.store') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+
+                        <div class="mb-4">
+                            <label for="amount" class="form-label fw-bold">Jumlah Pengeluaran</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" name="amount" id="amount" class="form-control" required placeholder="Masukkan jumlah">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="date" class="form-label fw-bold">Tanggal Transaksi</label>
+                            <input type="date" name="date" id="date" class="form-control" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Deskripsi</label>
+                            <textarea name="description" id="description" class="form-control" rows="3" placeholder="Tambahkan deskripsi transaksi"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="sumber" class="form-label fw-bold">Sumber Pengeluaran</label>
+                            <input type="text" name="sumber" id="sumber" class="form-control" required placeholder="Masukkan sumber pengeluaran">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="receipt" class="form-label fw-bold">Foto Nota</label>
+                            <input type="file" name="receipt" id="receipt" class="form-control" accept="image/*">
+                            <div class="form-text text-muted">Upload foto nota dalam format JPG, PNG, atau PDF</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-save me-2"></i>Simpan Pengeluaran
+                            </button>
+                            <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Kembali
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-    @endif
-
-    <form action="{{ route('pendapatan.store') }}" method="POST" enctype="multipart/form-data">
-        @csrf
-
-        <div class="form-group">
-            <label for="amount">Jumlah Pendapatan</label>
-            <input type="number" name="amount" id="amount" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-            <label for="date">Tanggal Transaksi</label>
-            <input type="date" name="date" id="date" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-            <label for="description">Deskripsi</label>
-            <textarea name="description" id="description" class="form-control"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="sumber">Sumber Penghasilan</label>
-            <input type="text" name="sumber" id="sumber" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-            <label for="receipt">Foto Nota</label>
-            <input type="file" name="receipt" id="receipt" class="form-control">
-        </div>
-
-        <button type="submit" class="btn btn-primary">Simpan</button>
-    </form>
+    </div>
 </div>
 @endsection

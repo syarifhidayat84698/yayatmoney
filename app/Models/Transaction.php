@@ -23,6 +23,8 @@ class Transaction extends Model
         'nomor_tagihan',
         'nama_customer',
         'nomor_whatsapp',
+        'status',
+        'keterangan',
         
     ];
 }
