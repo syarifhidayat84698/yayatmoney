@@ -47,6 +47,7 @@
                         <ul class="collapse">
                             <li><a style="border-bottom: none; text-decoration: none;" href="/laporan/data_hutang">Lihat Laporan Hutang</a></li>
                             <li><a style="border-bottom: none; text-decoration: none;" href="/laporan/pemasukan">Lihat Laporan Pemasukan</a></li>
+                            <li><a style="border-bottom: none; text-decoration: none;" href="/laporan/pengeluaran">Lihat Laporan Pengeluaran</a></li>
                         </ul>
                     </li>
                     

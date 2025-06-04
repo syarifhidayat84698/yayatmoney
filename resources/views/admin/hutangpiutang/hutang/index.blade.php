@@ -2,6 +2,12 @@
 
 @section('title', 'Data Hutang')
 
+@push('styles')
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+@endpush
+
 @section('content')
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
@@ -175,222 +181,7 @@
     </script>
 @endif
 
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-<script>
-    document.getElementById('searchCustomer').addEventListener('input', function() {
-        const searchValue = this.value.toLowerCase();
-        const rows = document.querySelectorAll('#customerTableBody tr');
-        rows.forEach(row => {
-            const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-            row.style.display = name.includes(searchValue) ? '' : 'none';
-        });
-    });
-
-    // Pelunasan Hutang
-    document.querySelectorAll('.bayar-hutang').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const tagihan = this.getAttribute('data-tagihan');
-            const customer = this.getAttribute('data-customer');
-            const totalHutang = this.getAttribute('data-total');
-            const sisaHutang = this.getAttribute('data-sisa');
-            
-            // Fetch payment history
-            fetch(`/hutangs/${id}/history`)
-                .then(response => response.json())
-                .then(history => {
-                    let historyHtml = '';
-                    if (history.length > 0) {
-                        historyHtml = `
-                            <div class="mt-4">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="fas fa-history text-primary me-2"></i>
-                                    <h6 class="mb-0">Riwayat Pembayaran</h6>
-                                </div>
-                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                    <table class="table table-sm table-hover border">
-                                        <thead class="bg-light sticky-top">
-                                            <tr>
-                                                <th class="px-3">Tanggal</th>
-                                                <th class="text-end px-3">Jumlah Bayar</th>
-                                                <th class="px-3">Keterangan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${history.map(item => `
-                                                <tr>
-                                                    <td class="px-3">
-                                                        <i class="far fa-calendar-alt text-muted me-1"></i>
-                                                        ${new Date(item.created_at).toLocaleDateString('id-ID', {
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            year: 'numeric'
-                                                        })}
-                                                    </td>
-                                                    <td class="text-end px-3">
-                                                        <span class="fw-medium">Rp ${formatRupiah(item.jumlah_bayar)}</span>
-                                                    </td>
-                                                    <td class="px-3 text-muted">${item.keterangan || '-'}</td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                        <tfoot class="bg-light fw-bold">
-                                            <tr>
-                                                <td class="px-3">Total Pembayaran</td>
-                                                <td class="text-end px-3">Rp ${formatRupiah(history.reduce((sum, item) => sum + parseFloat(item.jumlah_bayar), 0))}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    Swal.fire({
-                        title: '<i class="fas fa-money-check-alt me-2"></i>Pelunasan Hutang',
-                        html: `
-                            <div class="text-start">
-                                <div class="card border-0 bg-light mb-3">
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-file-invoice fa-fw text-primary me-2"></i>
-                                                    <div>
-                                                        <small class="text-muted d-block">No Tagihan</small>
-                                                        <strong>${tagihan}</strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-user fa-fw text-primary me-2"></i>
-                                                    <div>
-                                                        <small class="text-muted d-block">Customer</small>
-                                                        <strong>${customer}</strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-money-bill-alt fa-fw text-primary me-2"></i>
-                                                    <div>
-                                                        <small class="text-muted d-block">Total Hutang</small>
-                                                        <strong>Rp ${formatRupiah(totalHutang)}</strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="fas fa-wallet fa-fw text-primary me-2"></i>
-                                                    <div>
-                                                        <small class="text-muted d-block">Sisa Hutang</small>
-                                                        <strong class="text-danger">Rp ${formatRupiah(sisaHutang)}</strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="jumlah_bayar" class="form-label">
-                                        <i class="fas fa-hand-holding-usd text-primary me-2"></i>Jumlah Bayar
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="number" id="jumlah_bayar" class="form-control" 
-                                            placeholder="Masukkan jumlah pembayaran"
-                                            max="${sisaHutang}">
-                                    </div>
-                                    <small class="text-muted">Maksimal pembayaran: Rp ${formatRupiah(sisaHutang)}</small>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="keterangan_bayar" class="form-label">
-                                        <i class="fas fa-sticky-note text-primary me-2"></i>Keterangan
-                                    </label>
-                                    <textarea id="keterangan_bayar" class="form-control" rows="2" 
-                                        placeholder="Tambahkan keterangan pembayaran (opsional)"></textarea>
-                                </div>
-
-                                ${historyHtml}
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: '<i class="fas fa-check me-2"></i>Bayar',
-                        cancelButtonText: '<i class="fas fa-times me-2"></i>Batal',
-                        confirmButtonColor: '#28a745',
-                        cancelButtonColor: '#dc3545',
-                        width: '700px',
-                        customClass: {
-                            confirmButton: 'btn btn-success',
-                            cancelButton: 'btn btn-danger'
-                        },
-                        preConfirm: () => {
-                            const jumlahBayar = document.getElementById('jumlah_bayar').value;
-                            const keterangan = document.getElementById('keterangan_bayar').value;
-                            
-                            if (!jumlahBayar) {
-                                Swal.showValidationMessage('Jumlah pembayaran harus diisi');
-                                return false;
-                            }
-
-                            if (parseFloat(jumlahBayar) > parseFloat(sisaHutang)) {
-                                Swal.showValidationMessage('Jumlah pembayaran tidak boleh melebihi sisa hutang');
-                                return false;
-                            }
-                            
-                            return { jumlahBayar, keterangan };
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = `/hutangs/${id}/bayar`;
-                            form.style.display = 'none';
-                            
-                            const csrfToken = document.createElement('input');
-                            csrfToken.type = 'hidden';
-                            csrfToken.name = '_token';
-                            csrfToken.value = '{{ csrf_token() }}';
-                            form.appendChild(csrfToken);
-                            
-                            const jumlahBayarInput = document.createElement('input');
-                            jumlahBayarInput.type = 'hidden';
-                            jumlahBayarInput.name = 'jumlah_bayar';
-                            jumlahBayarInput.value = result.value.jumlahBayar;
-                            form.appendChild(jumlahBayarInput);
-                            
-                            const keteranganInput = document.createElement('input');
-                            keteranganInput.type = 'hidden';
-                            keteranganInput.name = 'keterangan';
-                            keteranganInput.value = result.value.keterangan;
-                            form.appendChild(keteranganInput);
-                            
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
-                    });
-                });
-        });
-    });
-    
-    function formatRupiah(angka) {
-        return new Intl.NumberFormat('id-ID').format(angka);
-    }
-</script>
 @endsection
-
-@push('styles')
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-@endpush
 
 @push('scripts')
 <!-- jQuery (required for DataTables) -->
@@ -398,16 +189,247 @@
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     $(document).ready(function() {
-        $('#hutangTable').DataTable({
+        // Initialize DataTable
+        const table = $('#hutangTable').DataTable({
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
             },
             "columnDefs": [
                 { "orderable": false, "targets": [10] } // Disable sorting on the "Aksi" column
-            ]
+            ],
+            "pageLength": 10,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
+            "responsive": true
+        });
+
+        // Rest of your existing JavaScript code
+        document.querySelectorAll('.bayar-hutang').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const tagihan = this.getAttribute('data-tagihan');
+                const customer = this.getAttribute('data-customer');
+                const totalHutang = this.getAttribute('data-total');
+                const sisaHutang = this.getAttribute('data-sisa');
+                
+                // Fetch payment history
+                fetch(`/hutangs/${id}/history`, {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(history => {
+                        let historyHtml = '';
+                        if (history.length > 0) {
+                            historyHtml = `
+                                <div class="mt-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-history text-primary me-2"></i>
+                                        <h6 class="mb-0">Riwayat Pembayaran</h6>
+                                    </div>
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover border">
+                                            <thead class="bg-light sticky-top">
+                                                <tr>
+                                                    <th class="px-3">Tanggal</th>
+                                                    <th class="text-end px-3">Jumlah Bayar</th>
+                                                    <th class="px-3">Keterangan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${history.map(item => `
+                                                    <tr>
+                                                        <td class="px-3">
+                                                            <i class="far fa-calendar-alt text-muted me-1"></i>
+                                                            ${new Date(item.created_at).toLocaleDateString('id-ID', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </td>
+                                                        <td class="text-end px-3">
+                                                            <span class="fw-medium">Rp ${formatRupiah(item.jumlah_bayar)}</span>
+                                                        </td>
+                                                        <td class="px-3 text-muted">${item.keterangan || '-'}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                            <tfoot class="bg-light fw-bold">
+                                                <tr>
+                                                    <td class="px-3">Total Pembayaran</td>
+                                                    <td class="text-end px-3">Rp ${formatRupiah(history.reduce((sum, item) => sum + parseFloat(item.jumlah_bayar), 0))}</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        Swal.fire({
+                            title: '<i class="fas fa-money-check-alt me-2"></i>Pelunasan Hutang',
+                            html: `
+                                <div class="text-start">
+                                    <div class="card border-0 bg-light mb-3">
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-file-invoice fa-fw text-primary me-2"></i>
+                                                        <div>
+                                                            <small class="text-muted d-block">No Tagihan</small>
+                                                            <strong>${tagihan}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-user fa-fw text-primary me-2"></i>
+                                                        <div>
+                                                            <small class="text-muted d-block">Customer</small>
+                                                            <strong>${customer}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-money-bill-alt fa-fw text-primary me-2"></i>
+                                                        <div>
+                                                            <small class="text-muted d-block">Total Hutang</small>
+                                                            <strong>Rp ${formatRupiah(totalHutang)}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-wallet fa-fw text-primary me-2"></i>
+                                                        <div>
+                                                            <small class="text-muted d-block">Sisa Hutang</small>
+                                                            <strong class="text-danger">Rp ${formatRupiah(sisaHutang)}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="jumlah_bayar" class="form-label">
+                                            <i class="fas fa-hand-holding-usd text-primary me-2"></i>Jumlah Bayar
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" id="jumlah_bayar" class="form-control" 
+                                                placeholder="Masukkan jumlah pembayaran"
+                                                max="${sisaHutang}">
+                                        </div>
+                                        <small class="text-muted">Maksimal pembayaran: Rp ${formatRupiah(sisaHutang)}</small>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="keterangan_bayar" class="form-label">
+                                            <i class="fas fa-sticky-note text-primary me-2"></i>Keterangan
+                                        </label>
+                                        <textarea id="keterangan_bayar" class="form-control" rows="2" 
+                                            placeholder="Tambahkan keterangan pembayaran (opsional)"></textarea>
+                                    </div>
+
+                                    ${historyHtml}
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-check me-2"></i>Bayar',
+                            cancelButtonText: '<i class="fas fa-times me-2"></i>Batal',
+                            confirmButtonColor: '#28a745',
+                            cancelButtonColor: '#dc3545',
+                            width: '700px',
+                            customClass: {
+                                confirmButton: 'btn btn-success',
+                                cancelButton: 'btn btn-danger'
+                            },
+                            preConfirm: () => {
+                                const jumlahBayar = document.getElementById('jumlah_bayar').value;
+                                const keterangan = document.getElementById('keterangan_bayar').value;
+                                
+                                if (!jumlahBayar) {
+                                    Swal.showValidationMessage('Jumlah pembayaran harus diisi');
+                                    return false;
+                                }
+
+                                if (parseFloat(jumlahBayar) > parseFloat(sisaHutang)) {
+                                    Swal.showValidationMessage('Jumlah pembayaran tidak boleh melebihi sisa hutang');
+                                    return false;
+                                }
+                                
+                                return { jumlahBayar, keterangan };
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Show loading state
+                                Swal.fire({
+                                    title: 'Memproses pembayaran...',
+                                    allowOutsideClick: false,
+                                    didOpen: () => {
+                                        Swal.showLoading();
+                                    }
+                                });
+
+                                // Submit the form
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = `/hutangs/${id}/bayar`;
+                                form.style.display = 'none';
+                                
+                                const csrfToken = document.createElement('input');
+                                csrfToken.type = 'hidden';
+                                csrfToken.name = '_token';
+                                csrfToken.value = '{{ csrf_token() }}';
+                                form.appendChild(csrfToken);
+                                
+                                const jumlahBayarInput = document.createElement('input');
+                                jumlahBayarInput.type = 'hidden';
+                                jumlahBayarInput.name = 'jumlah_bayar';
+                                jumlahBayarInput.value = result.value.jumlahBayar;
+                                form.appendChild(jumlahBayarInput);
+                                
+                                const keteranganInput = document.createElement('input');
+                                keteranganInput.type = 'hidden';
+                                keteranganInput.name = 'keterangan';
+                                keteranganInput.value = result.value.keterangan;
+                                form.appendChild(keteranganInput);
+                                
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Terjadi kesalahan saat mengambil data pembayaran. Silakan coba lagi.',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    });
+            });
         });
     });
+    
+    function formatRupiah(angka) {
+        return new Intl.NumberFormat('id-ID').format(angka);
+    }
 </script>
 @endpush

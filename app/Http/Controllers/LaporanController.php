@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Hutang;
 use App\Models\Input;
+use App\Models\Pengeluaran;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf as FacadePdf;
 
@@ -66,6 +68,36 @@ class LaporanController extends Controller
         $inputs = $inputs->get();
 
         return view('admin.laporankeuangan.LaporanPemasukan', compact('inputs'));
+    }
+
+    /**
+     * Menampilkan laporan pengeluaran dengan filter
+     */
+    public function pengeluaran(Request $request)
+    {
+        $query = Transaction::query()->where('type', '=', 'income');
+
+        // Filter by description
+        if ($request->filled('search')) {
+            $query->where('description', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by category (sumber)
+        if ($request->filled('kategori')) {
+            $query->where('sumber', '=', $request->kategori);
+        }
+
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
+
+        $pengeluarans = $query->orderBy('transaction_date', 'desc')->get();
+
+        return view('admin.laporankeuangan.LaporanPengeluaran', compact('pengeluarans'));
     }
 
     /**
@@ -142,6 +174,40 @@ class LaporanController extends Controller
         ]);
         
         return $pdf->stream('laporan_pemasukan.pdf');
+    }
+
+    /**
+     * Ekspor laporan pengeluaran ke PDF
+     */
+    public function exportPengeluaranPDF(Request $request)
+    {
+        $query = Transaction::query()->where('type', '=', 'income');
+
+        // Filter by description
+        if ($request->filled('search')) {
+            $query->where('description', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by category (sumber)
+        if ($request->filled('kategori')) {
+            $query->where('sumber', '=', $request->kategori);
+        }
+
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
+
+        $pengeluarans = $query->orderBy('transaction_date', 'desc')->get();
+
+        $pdf = FacadePdf::loadView('admin.laporankeuangan.pdf.pengeluaran', compact('pengeluarans'));
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+
+        return $pdf->download('laporan-pengeluaran.pdf');
     }
 
     /**

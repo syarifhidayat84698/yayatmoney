@@ -16,6 +16,7 @@ use App\Http\Controllers\OCRController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\HutangController;
 use App\http\Controllers\LaporanController;
+use App\Http\Controllers\LaporanKeuanganController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,23 +49,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Laporan
-Route::get('/laporan/data_hutang', [LaporanController::class, 'dataHutang'])
-    ->middleware(['auth', 'verified'])
-    ->name('laporan.data_hutang');
-
-Route::get('/laporan/pemasukan', [LaporanController::class, 'pemasukan'])
-    ->middleware(['auth', 'verified'])
-    ->name('laporan.pemasukan');
-
-Route::get('/laporan/hutang', [LaporanController::class, 'hutang'])
-    ->middleware(['auth', 'verified'])
-    ->name('laporan.hutang');
-
-
-// Rute untuk ekspor PDF
-Route::get('/laporan/hutang/export', [LaporanController::class, 'exportHutangPDF'])->middleware(['auth', 'verified'])->name('laporan.hutang.export');
-Route::get('/laporan/pemasukan/export', [LaporanController::class, 'exportPemasukanPDF'])->middleware(['auth', 'verified'])->name('laporan.pemasukan.export');
-
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/laporan/data_hutang', [LaporanController::class, 'dataHutang'])->name('laporan.data_hutang');
+    Route::get('/laporan/pemasukan', [LaporanController::class, 'pemasukan'])->name('laporan.pemasukan');
+    Route::get('/laporan/pengeluaran', [LaporanController::class, 'pengeluaran'])->name('laporan.pengeluaran');
+    
+    Route::get('/laporan/hutang/export', [LaporanController::class, 'exportHutangPDF'])->name('laporan.hutang.export');
+    Route::get('/laporan/pemasukan/export', [LaporanController::class, 'exportPemasukanPDF'])->name('laporan.pemasukan.export');
+    Route::get('/laporan/pengeluaran/export', [LaporanController::class, 'exportPengeluaranPDF'])->name('laporan.pengeluaran.export');
+});
 
 // customer
 Route::resource('customers', CustomerController::class)
@@ -107,12 +100,13 @@ Route::delete('/input/delete/{id}', [InputController::class, 'destroy'])
 
 //    pop up
 Route::post('/hutangs/{hutang}/bayar', [HutangController::class, 'bayar'])
-->name('hutangs.bayar');
+    ->middleware(['auth', 'verified'])
+    ->name('hutangs.bayar');
 
 // Rute untuk mendapatkan riwayat pembayaran
 Route::get('/hutangs/{id}/history', [HutangController::class, 'history'])
-->middleware(['auth', 'verified'])
-->name('hutangs.history');
+    ->middleware(['auth', 'verified'])
+    ->name('hutangs.history');
 
 // Rute untuk menampilkan form edit faktur
 Route::get('/input/edit/{id}', [InputController::class, 'edit'])
@@ -240,7 +234,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
+Route::get('/laporan-keuangan/dashboard/cetak', [LaporanKeuanganController::class, 'cetakDashboard'])->name('laporan-keuangan.dashboard.cetak');
 
 // Memuat rute otentikasi
 require __DIR__ . '/auth.php';
