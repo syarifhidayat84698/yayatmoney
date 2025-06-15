@@ -75,16 +75,11 @@ class LaporanController extends Controller
      */
     public function pengeluaran(Request $request)
     {
-        $query = Transaction::query()->where('type', '=', 'income');
+        $query = Transaction::query()->where('type', 'outcome');
 
-        // Filter by description
+        // Filter by nama_toko
         if ($request->filled('search')) {
-            $query->where('description', 'like', '%' . $request->search . '%');
-        }
-
-        // Filter by category (sumber)
-        if ($request->filled('kategori')) {
-            $query->where('sumber', '=', $request->kategori);
+            $query->where('nama_toko', 'like', '%' . $request->search . '%');
         }
 
         // Filter by date range
@@ -95,9 +90,9 @@ class LaporanController extends Controller
             $query->whereDate('transaction_date', '<=', $request->date_to);
         }
 
-        $pengeluarans = $query->orderBy('transaction_date', 'desc')->get();
+        $transactions = $query->orderBy('transaction_date', 'desc')->get();
 
-        return view('admin.laporankeuangan.LaporanPengeluaran', compact('pengeluarans'));
+        return view('admin.laporankeuangan.LaporanPengeluaran', compact('transactions'));
     }
 
     /**
@@ -181,7 +176,7 @@ class LaporanController extends Controller
      */
     public function exportPengeluaranPDF(Request $request)
     {
-        $query = Transaction::query()->where('type', '=', 'income');
+        $query = Transaction::query()->where('type', 'outcome');
 
         // Filter by description
         if ($request->filled('search')) {

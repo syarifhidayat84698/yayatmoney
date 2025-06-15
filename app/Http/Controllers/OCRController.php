@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use thiagoalessio\TesseractOCR\TesseractOCR;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class OCRController extends Controller
 {
@@ -17,77 +18,101 @@ class OCRController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg'
         ]);
 
-        // Simpan gambar sementara
-        $imagePath = $request->file('image')->store('ocr_images', 'public');
+        try {
+            // Simpan gambar sementara
+            $imagePath = $request->file('image')->store('ocr_images', 'public');
+            $fileUrl = asset('storage/' . $imagePath);
 
-        // Jalankan OCR dengan bahasa Indonesia + Inggris
-        $text = (new TesseractOCR(storage_path('app/public/' . $imagePath)))
-            ->lang('ind+eng')
-            ->run();
-
-        // Debugging hasil OCR sebelum diproses
-        Log::info("Hasil OCR Mentah: " . $text);
+            // dd($fileUrl);
 
 
-        // Preprocessing teks agar lebih mudah diproses
-        $cleaned_text = $this->preprocessText($text);
+            // Panggil API Taggun
+            $ocrResponse = Http::withHeaders([
+                'accept' => 'application/json',
+                'apikey' => env('TAGGUN_API_KEY', '146c0c73236d4000a869b946c8d49b5a'),
+                'content-type' => 'application/json',
+            ])->post('https://api.taggun.io/api/receipt/v1/simple/url', [
+                'headers' => ['x-custom-key' => 'string'],
+                'url' => 'https://s1.bukalapak.com/bukalapak-kontenz-production/content_attachments/websites/2/95891/original/Contoh_Nota_Penjualan_Makanan.jpg',
+                // 'url' => $fileUrl,
+                'refresh' => false,
+                'incognito' => false,
+                'extractTime' => true
+            ]);
 
-        // Debugging hasil setelah diproses
-        Log::info("Hasil OCR Setelah Preprocessing: " . $cleaned_text);
+            if ($ocrResponse->failed()) {
+                Log::error('Taggun API Error:', [
+                    'status' => $ocrResponse->status(),
+                    'body' => $ocrResponse->body()
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal memproses gambar dengan OCR'
+                ], 500);
+            }
 
-        $nama_customer_full = $this->extractData('/Nama Customer\s*:\s*([\w\s]+)/i', $cleaned_text);
-        $nama_customer = trim(str_replace("Nomor Whatsapp", "", $nama_customer_full));
+            $result = $ocrResponse->json();
 
-        // Ekstrak data dan hitung akurasi
-        $nomor_tagihan = $this->extractData('/Nomor Tagihan\s*:\s*(\d+)/i', $cleaned_text);
-        $nomor_whatsapp = $this->extractData('/Nomor Whatsapp\s*:\s*(\d+)/i', $cleaned_text);
-        $amount = $this->extractData('/Total\s*:\s*([\d,.]+)/i', $cleaned_text);
-        $date = $this->extractData('/Tanggal :\s*(\S+)/', $text);
 
-        // Hitung akurasi berdasarkan pola yang ditemukan dan kualitas ekstraksi
-        $accuracies = [
-            'nomor_tagihan' => $this->calculateAccuracy($nomor_tagihan, '/^\d{3,}$/'),
-            'nama_customer' => $this->calculateAccuracy($nama_customer, '/^[A-Za-z\s]{3,}$/'),
-            'nomor_whatsapp' => $this->calculateAccuracy($nomor_whatsapp, '/^\d{10,13}$/'),
-            'amount' => $this->calculateAccuracy($amount, '/^[\d,.]+$/'),
-            'transaction_date' => $this->calculateAccuracy($date, '/^\d{2}-\d{2}-\d{4}$/')
-        ];
+            // Ekstrak data dari response
+            $namaToko = $result['merchantName']['data'] ?? 'Tidak ditemukan';
+            $alamat = $result['merchantAddress']['data'] ?? 'Tidak ditemukan';
+            $total = $result['totalAmount']['data'] ?? 0;
+            $tanggal = $result['date']['data'] ?? null;
 
-        $data = [
-            'nomor_tagihan' => $nomor_tagihan,
-            'nama_customer' => $nama_customer,
-            'nomor_whatsapp' => $nomor_whatsapp,
-            'amount' => floatval(str_replace(',', '', $amount)),
-            'transaction_date' => $date ? Carbon::createFromFormat('d-m-Y', $date)->format('Y-m-d') : null,
-            'receipt' => $imagePath,
-            'accuracies' => $accuracies,
-            'raw_text' => $cleaned_text // Menambahkan raw text untuk review
-        ];
+            // Hitung akurasi untuk setiap field
+            $accuracies = [
+                'nama_toko' => $this->calculateAccuracy($namaToko, '/^[A-Za-z\s]{3,}$/'),
+                'alamat' => $this->calculateAccuracy($alamat, '/^[\w\s.,]{5,}$/'),
+                'amount' => $this->calculateAccuracy($total, '/^[\d,.]+$/'),
+                'transaction_date' => $this->calculateAccuracy($tanggal, '/^\d{4}-\d{2}-\d{2}$/')
+            ];
 
-        // Setelah proses ekstraksi atau simpan
-        $message = "Halo {$data['nama_customer']},\n"
-                 . "Nota Anda berhasil diproses.\n"
-                 . "Nomor Tagihan: {$data['nomor_tagihan']}\n"
-                 . "Total: Rp " . number_format($data['amount'], 0, ',', '.') . "\n"
-                 . "Tanggal: {$data['transaction_date']}";
-        $this->sendWhatsapp($data['nomor_whatsapp'], $message);
+            // Format tanggal jika ada
+            $formattedDate = $tanggal ? Carbon::parse($tanggal)->format('Y-m-d') : null;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data berhasil diekstrak',
-            'data' => $data
-        ]);
+            // Format total
+            $totalFormatted = is_numeric($total) ? number_format($total, 0, ',', '.') : '0';
+
+            $data = [
+                'nama_toko' => $namaToko,
+                'alamat' => $alamat,
+                'amount' => floatval($total),
+                'transaction_date' => $formattedDate,
+                'receipt' => $imagePath,
+                'accuracies' => $accuracies,
+                'raw_text' => json_encode($result, JSON_PRETTY_PRINT)
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data berhasil diekstrak',
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('OCR Processing Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memproses gambar'
+            ], 500);
+        }
     }
 
     public function saveTransaction(Request $request)
     {
         $data = $request->validate([
-            'nomor_tagihan' => 'required',
-            'nama_customer' => 'required',
-            'nomor_whatsapp' => 'required',
+            'nama_toko' => 'required|string|max:255',
+            'alamat' => 'required|string',
             'amount' => 'required|numeric',
             'transaction_date' => 'required|date',
-            'receipt' => 'required'
+            'receipt' => 'required',
+            'accuracies' => 'nullable|array',
+            'raw_text' => 'nullable|string'
         ]);
 
         // Tambahkan user_id dan type
@@ -96,14 +121,6 @@ class OCRController extends Controller
 
         // Simpan ke database
         $transaction = Transaction::create($data);
-
-        // Setelah proses ekstraksi atau simpan
-        $message = "Halo {$data['nama_customer']},\n"
-                 . "Nota Anda berhasil diproses.\n"
-                 . "Nomor Tagihan: {$data['nomor_tagihan']}\n"
-                 . "Total: Rp " . number_format($data['amount'], 0, ',', '.') . "\n"
-                 . "Tanggal: {$data['transaction_date']}";
-        $this->sendWhatsapp($data['nomor_whatsapp'], $message);
 
         return response()->json([
             'status' => 'success',
@@ -133,81 +150,107 @@ class OCRController extends Controller
         return min(100, $baseAccuracy); // Maksimum 100%
     }
 
-    private function preprocessText($text)
+    public function waWebhook(Request $request)
     {
-        // Hapus spasi ekstra dan karakter yang tidak diperlukan
-        $text = preg_replace("/\s+/", " ", $text); // Ubah banyak spasi menjadi satu
-        $text = trim(str_replace("\n", " ", $text)); // Hapus newline yang tidak perlu
+        try {
+            // Contoh payload Fonnte/Ultramsg, sesuaikan dengan gateway kamu
+            $number = $request->input('number'); // nomor pengirim
+            $fileUrl = $request->input('file_url'); // url file gambar nota
 
-        return $text;
-    }
+            if (!$fileUrl) {
+                throw new \Exception('URL file tidak ditemukan');
+            }
 
-    private function extractData($pattern, $text)
-    {
-        preg_match($pattern, $text, $matches);
-        return isset($matches[1]) ? trim($matches[1]) : null;
+            // Download gambar ke storage
+            $imageContents = file_get_contents($fileUrl);
+            if (!$imageContents) {
+                throw new \Exception('Gagal mengunduh gambar');
+            }
+
+            $filename = 'ocr_images/' . uniqid() . '.jpg';
+            $path = storage_path('app/public/' . $filename);
+            file_put_contents($path, $imageContents);
+
+            // Panggil API Taggun
+            $ocrResponse = Http::withHeaders([
+                'accept' => 'application/json',
+                'apikey' => env('TAGGUN_API_KEY', '146c0c73236d4000a869b946c8d49b5a'),
+                'content-type' => 'application/json',
+            ])->post('https://api.taggun.io/api/receipt/v1/simple/url', [
+                'url' => $fileUrl,
+                'refresh' => false,
+                'incognito' => false,
+                'extractTime' => true
+            ]);
+
+            if ($ocrResponse->failed()) {
+                throw new \Exception('Gagal memproses gambar dengan OCR');
+            }
+
+            $result = $ocrResponse->json();
+
+            // Ekstrak data
+            $namaToko = $result['merchantName']['data'] ?? 'Tidak ditemukan';
+            $alamat = $result['merchantAddress']['data'] ?? 'Tidak ditemukan';
+            $total = $result['totalAmount']['data'] ?? 0;
+            $tanggal = $result['date']['data'] ?? null;
+
+            // Format pesan
+            $message = "Hasil OCR Nota Anda:\n"
+                     . "Nama Toko: {$namaToko}\n"
+                     . "Alamat: {$alamat}\n"
+                     . "Total: Rp " . number_format($total, 0, ',', '.') . "\n"
+                     . "Tanggal: {$tanggal}\n\n"
+                     . "Jika ada kesalahan, silakan upload ulang nota yang lebih jelas.";
+
+            // Kirim hasil ke nomor pengirim
+            $this->sendWhatsapp($number, $message);
+
+            return response()->json(['status' => 'success']);
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp OCR Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            $this->sendWhatsapp($number, "❌ *OCR gagal memproses gambar.*\nSilakan coba lagi dengan gambar yang lebih jelas.");
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     private function sendWhatsapp($number, $message)
     {
-        $token = env('WA_GATEWAY_TOKEN'); // Simpan token di .env
-        $url = 'https://api.fonnte.com/send'; // Ganti sesuai gateway kamu
+        try {
+            $token = env('WA_GATEWAY_TOKEN');
+            $url = env('WA_GATEWAY_URL', 'https://api.fonnte.com/send');
 
-        $data = [
-            'target' => $number,
-            'message' => $message,
-        ];
+            $response = Http::withHeaders([
+                'Authorization' => $token
+            ])->post($url, [
+                'target' => $number,
+                'message' => $message
+            ]);
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: $token"
-        ]);
-        $response = curl_exec($ch);
-        curl_close($ch);
+            if ($response->failed()) {
+                Log::error('WhatsApp Send Error:', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
 
-        return $response;
-    }
+            return $response->successful();
 
-    public function waWebhook(Request $request)
-    {
-        // Contoh payload Fonnte/Ultramsg, sesuaikan dengan gateway kamu
-        $number = $request->input('number'); // nomor pengirim
-        $fileUrl = $request->input('file_url'); // url file gambar nota
-
-        // Download gambar ke storage
-        $imageContents = file_get_contents($fileUrl);
-        $filename = 'ocr_images/' . uniqid() . '.jpg';
-        $path = storage_path('app/public/' . $filename);
-        file_put_contents($path, $imageContents);
-
-        // Jalankan OCR
-        $text = (new TesseractOCR($path))
-            ->lang('ind+eng')
-            ->run();
-
-        $cleaned_text = $this->preprocessText($text);
-
-        $nama_customer_full = $this->extractData('/Nama Customer\s*:\s*([\w\s]+)/i', $cleaned_text);
-        $nama_customer = trim(str_replace("Nomor Whatsapp", "", $nama_customer_full));
-        $nomor_tagihan = $this->extractData('/Nomor Tagihan\s*:\s*(\d+)/i', $cleaned_text);
-        $amount = $this->extractData('/Total\s*:\s*([\d,.]+)/i', $cleaned_text);
-        $date = $this->extractData('/Tanggal :\s*(\S+)/', $text);
-
-        // Compose hasil pesan
-        $message = "Hasil OCR Nota Anda:\n"
-                 . "Nama: {$nama_customer}\n"
-                 . "Nomor Tagihan: {$nomor_tagihan}\n"
-                 . "Total: Rp " . number_format(floatval(str_replace(',', '', $amount)), 0, ',', '.') . "\n"
-                 . "Tanggal: {$date}\n\n"
-                 . "Jika ada kesalahan, silakan upload ulang nota yang lebih jelas.";
-
-        // Kirim hasil ke nomor pengirim
-        $this->sendWhatsapp($number, $message);
-
-        return response()->json(['status' => 'ok']);
+        } catch (\Exception $e) {
+            Log::error('WhatsApp Send Exception:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 }

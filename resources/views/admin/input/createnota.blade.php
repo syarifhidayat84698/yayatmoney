@@ -28,6 +28,7 @@
             font-size: 14px;
             line-height: 1.6;
             position: relative;
+            border-bottom: 2px solid #f0f0f0;
         }
         .nota::before {
             content: '';
@@ -53,30 +54,29 @@
         }
         .header {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            align-items: flex-start;
+            justify-content: flex-start;
+            flex-direction: column;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #f0f0f0;
         }
-        .logo-section {
+        .header-top {
             display: flex;
             align-items: center;
             gap: 15px;
+            margin-bottom: 10px;
         }
-        .logo-section img {
-            width: 60px;
-            height: 60px;
+        .header-top img {
+            width: 80px;
+            height: 80px;
             object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .company-info {
-            flex-grow: 1;
-            text-align: right;
-            font-size: 12px;
-            color: #666;
-            line-height: 1.6;
+        .header-text-group {
+            display: flex;
+            flex-direction: column;
         }
         h2 {
             color: #2d3748;
@@ -87,6 +87,42 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
+            margin-bottom: 5px;
+        }
+        .address-line {
+            font-size: 10px;
+            color: #334155;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .contact-details {
+            color: #334155;
+        }
+        .bank-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .bank-info p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+        }
+        .bank-info .bank-item {
+            flex-basis: calc(50% - 5px);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .bank-info svg {
+            width: 12px;
+            height: 12px;
         }
         .invoice-details {
             background-color: #f8fafc;
@@ -228,17 +264,37 @@
     <div class="nota" id="nota">
         <div class="watermark">PAID</div>
         <div class="header">
-            <div class="logo-section">
+            <div class="header-top">
                 <img src="{{ asset('assets/images/yayat.png') }}" alt="logo">
-                <div>
-                    <h2>FAKTUR</h2>
+                <div class="header-text-group">
+                    <h2>Hidayat Collection</h2>
+                    <p class="address-line">Kios 1 Pasar Sandang Tegal Gubuk Blok G193</p>
+                    <p class="address-line">Kios 2 Tembok Kidul RT 12/RW 02, Adiwerna, Tegal</p>
+                  
+                    <p class="address-line">WA: 082333305520</p>
                 </div>
             </div>
-            <div class="company-info">
-                <p style="margin: 0;">PT. Yayat Sejahtera</p>
-                <p style="margin: 0;">Jl. Raya No. 123, Jakarta</p>
-                <p style="margin: 0;">Telp: (021) 123-4567</p>
-                <p style="margin: 0;">Email: info@yayatsejahtera.com</p>
+            <div class="contact-details">
+                <div class="bank-info">
+                    <div class="bank-item">
+                        <p>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            BCA: 0990885745
+                        </p>
+                        <p style="font-size: 9px; color: #64748b;">a.n. Muhamad Syarif Hidayatullah</p>
+                    </div>
+                    <div class="bank-item">
+                        <p>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            BRI: 054501003553505
+                        </p>
+                        <p style="font-size: 9px; color: #64748b;">a.n. Akhmad Zaeni</p>
+                    </div>
+                </div>
             </div>
         </div>
         

@@ -14,17 +14,24 @@ class Transaction extends Model
 
     protected $fillable = [
         'user_id',
+        'nama_toko',
+        'alamat',
         'amount',
         'type',
-        'description',
         'transaction_date',
-        'sumber',
         'receipt',
-        'nomor_tagihan',
-        'nama_customer',
-        'nomor_whatsapp',
-        'status',
-        'keterangan',
-        
+        'accuracies',
+        'raw_text'
     ];
+
+    protected $casts = [
+        'transaction_date' => 'date',
+        'amount' => 'decimal:2',
+        'accuracies' => 'array'
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

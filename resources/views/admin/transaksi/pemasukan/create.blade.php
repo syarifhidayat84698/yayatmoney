@@ -25,6 +25,16 @@
                         @csrf
 
                         <div class="mb-4">
+                            <label for="nama_toko" class="form-label fw-bold">Nama Toko</label>
+                            <input type="text" name="nama_toko" id="nama_toko" class="form-control" required placeholder="Masukkan nama toko">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="alamat" class="form-label fw-bold">Alamat</label>
+                            <textarea name="alamat" id="alamat" class="form-control" rows="3" required placeholder="Masukkan alamat toko"></textarea>
+                        </div>
+
+                        <div class="mb-4">
                             <label for="amount" class="form-label fw-bold">Jumlah Pengeluaran</label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
@@ -35,16 +45,6 @@
                         <div class="mb-4">
                             <label for="date" class="form-label fw-bold">Tanggal Transaksi</label>
                             <input type="date" name="date" id="date" class="form-control" required>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="description" class="form-label fw-bold">Deskripsi</label>
-                            <textarea name="description" id="description" class="form-control" rows="3" placeholder="Tambahkan deskripsi transaksi"></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="sumber" class="form-label fw-bold">Sumber Pengeluaran</label>
-                            <input type="text" name="sumber" id="sumber" class="form-control" required placeholder="Masukkan sumber pengeluaran">
                         </div>
 
                         <div class="mb-4">

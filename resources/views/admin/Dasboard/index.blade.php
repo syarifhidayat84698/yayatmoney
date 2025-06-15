@@ -14,6 +14,11 @@
     $currentMonth = Carbon::now()->month;
     $currentYear = Carbon::now()->year;
 
+    // Calculate total balance from all transactions
+    $totalIncome = Input::sum('totalbayar');
+    $totalExpenses = Transaction::where('type', 'outcome')->sum('amount');
+    $totalBalance = $totalIncome - $totalExpenses;
+
     // Calculate this month's transactions and inputs
     $thisMonthTransactions = Transaction::whereMonth('transaction_date', $currentMonth)
         ->whereYear('transaction_date', $currentYear)
@@ -86,6 +91,12 @@
         @php
             $cards = [
                 [
+                    'title' => 'Total Saldo',
+                    'value' => 'Rp '. number_format($totalBalance, 2, ',', '.'),
+                    'color' => $totalBalance >= 0 ? 'success' : 'danger',
+                    'subtitle' => 'Total saldo dari semua transaksi'
+                ],
+                [
                     'title' => 'Pemasukan Bulan Ini',
                     'value' => 'Rp '. number_format($thisMonthInputs, 2, ',', '.'),
                     'color' => 'success',
@@ -116,13 +127,13 @@
         @endphp
 
         @foreach ($cards as $card)
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col" style="width: 20%;">
             <div class="card shadow border-0 h-100">
                 <div class="card-body d-flex flex-column justify-content-between">
                     <div>
                         <h5 class="card-title text-{{ $card['color'] }}">{{ $card['title'] }}</h5>
                         <p class="text-muted small mb-2">{{ $card['subtitle'] }}</p>
-                        <h2 class="fw-bold text-dark">{{ $card['value'] }}</h2>
+                        <h2 class="fw-bold text-dark" style="font-size: 1.2rem; line-height: 1.2;">{{ $card['value'] }}</h2>
                     </div>
                     @if(isset($card['change']))
                         <div class="mt-2">

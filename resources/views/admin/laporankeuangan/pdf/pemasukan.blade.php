@@ -32,6 +32,40 @@
             font-size: 12px;
             margin: 0;
         }
+        .company-details {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 10px;
+            color: #555;
+        }
+        .company-details p {
+            margin: 2px 0;
+        }
+        .company-details .bank-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between bank details */
+            margin-top: 5px;
+            flex-wrap: wrap; /* Allow items to wrap to next line if needed */
+        }
+        .company-details .bank-account {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-basis: calc(50% - 10px); /* Distribute space for two items per row, accounting for gap */
+        }
+        .company-details .bank-account svg {
+            width: 10px; /* Smaller icons for report */
+            height: 10px;
+        }
+        .company-details .bank-name {
+            font-weight: bold;
+        }
+        .company-details .account-number,
+        .company-details .account-name {
+            font-size: 9px;
+            color: #777;
+        }
         table { 
             width: 100%; 
             border-collapse: collapse;
@@ -109,6 +143,26 @@
     <div class="header">
         <h1>LAPORAN PEMASUKAN</h1>
         <p class="subtitle">Per Tanggal: {{ date('d F Y') }}</p>
+        <div class="company-details">
+            <p>Hidayat Collection</p>
+            <p>Kios 1 Pasar Sandang Tegal Gubuk Blok G193</p>
+            <p>Kios 2 Tembok Kidul RT 12/RW 02, Adiwerna, Tegal</p>
+            <p>WA: 082333305520</p>
+            <div class="bank-row">
+                <div class="bank-account">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span class="bank-name">BCA:</span> <span class="account-number">0990885745</span> <span class="account-name">(a.n. Muhamad Syarif Hidayatullah)</span>
+                </div>
+                <div class="bank-account">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span class="bank-name">BRI:</span> <span class="account-number">054501003553505</span> <span class="account-name">(a.n. Akhmad Zaeni)</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <table>

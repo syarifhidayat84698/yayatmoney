@@ -60,28 +60,19 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="result-item">
-                                    <label class="text-muted mb-1">Nomor Tagihan</label>
+                                    <label class="text-muted mb-1">Nama Toko</label>
                                     <div class="d-flex align-items-center">
-                                        <i class="fas fa-hashtag text-primary me-2"></i>
-                                        <input type="text" id="nomor_tagihan" name="nomor_tagihan" class="form-control fw-medium" readonly>
+                                        <i class="fas fa-store text-primary me-2"></i>
+                                        <input type="text" id="nama_toko" name="nama_toko" class="form-control fw-medium" readonly>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="result-item">
-                                    <label class="text-muted mb-1">Nama Customer</label>
+                                    <label class="text-muted mb-1">Alamat</label>
                                     <div class="d-flex align-items-center">
-                                        <i class="fas fa-user text-primary me-2"></i>
-                                        <input type="text" id="nama_customer" name="nama_customer" class="form-control fw-medium" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="result-item">
-                                    <label class="text-muted mb-1">Nomor WhatsApp</label>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fab fa-whatsapp text-success me-2"></i>
-                                        <input type="text" id="nomor_whatsapp" name="nomor_whatsapp" class="form-control fw-medium" readonly>
+                                        <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                        <input type="text" id="alamat" name="alamat" class="form-control fw-medium" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -214,9 +205,8 @@
                 result.classList.remove("d-none");
                 result.classList.add("animate__animated", "animate__fadeIn");
                 
-                document.getElementById("nomor_tagihan").value = data.data.nomor_tagihan || "";
-                document.getElementById("nama_customer").value = data.data.nama_customer || "";
-                document.getElementById("nomor_whatsapp").value = data.data.nomor_whatsapp || "";
+                document.getElementById("nama_toko").value = data.data.nama_toko || "";
+                document.getElementById("alamat").value = data.data.alamat || "";
                 document.getElementById("amount").value = data.data.amount ? data.data.amount.toLocaleString('id-ID') : "";
                 document.getElementById("transaction_date").value = data.data.transaction_date || "";
                 document.getElementById("receipt").value = data.data.receipt || "";
@@ -242,7 +232,7 @@
     });
 
     function setReviewFormReadonly(readonly) {
-        ["nomor_tagihan", "nama_customer", "nomor_whatsapp", "amount"].forEach(function(id) {
+        ["nama_toko", "alamat", "amount"].forEach(function(id) {
             document.getElementById(id).readOnly = readonly;
         });
         const dateInput = document.getElementById('transaction_date');
@@ -282,9 +272,8 @@
 
     document.getElementById('reviewForm').addEventListener('submit', function(event) {
         event.preventDefault();
-        const nomor_tagihan = document.getElementById('nomor_tagihan').value;
-        const nama_customer = document.getElementById('nama_customer').value;
-        const nomor_whatsapp = document.getElementById('nomor_whatsapp').value;
+        const nama_toko = document.getElementById('nama_toko').value;
+        const alamat = document.getElementById('alamat').value;
         const amount = document.getElementById('amount').value.replace(/[^\d,\.]/g, '').replace(/\./g, '');
         let transaction_date = document.getElementById('transaction_date').value;
         const receipt = document.getElementById('receipt').value;
@@ -296,7 +285,7 @@
             const [d, m, y] = transaction_date.split('-');
             transaction_date = `${y}-${m}-${d}`;
         }
-        if (!nomor_tagihan || !nama_customer || !nomor_whatsapp || !amount || !transaction_date) {
+        if (!nama_toko || !alamat || !amount || !transaction_date) {
             Swal.fire({
                 icon: "warning",
                 title: "Data Belum Lengkap",
@@ -313,9 +302,8 @@
                 "X-CSRF-TOKEN": document.querySelector('input[name="_token"]').value
             },
             body: JSON.stringify({
-                nomor_tagihan,
-                nama_customer,
-                nomor_whatsapp,
+                nama_toko,
+                alamat,
                 amount,
                 transaction_date,
                 receipt

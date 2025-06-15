@@ -8,7 +8,6 @@
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <style>
-
     .table th {
         font-weight: 600;
         text-transform: uppercase;
@@ -71,6 +70,16 @@
         padding: 0.75rem 1.5rem;
         font-size: 0.95rem;
     }
+    .accuracy-badge {
+        font-size: 0.75rem;
+        padding: 0.25em 0.5em;
+    }
+    .raw-text-preview {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     /* DataTables Custom Styling */
     .dataTables_wrapper .dataTables_length select {
         padding: 0.25rem 2rem 0.25rem 0.5rem;
@@ -125,10 +134,12 @@
                     <thead class="bg-light">
                         <tr>
                             <th class="py-3 px-4">#</th>
-                            <th class="py-3 px-4">No Tagihan</th>
-                            <th class="py-3 px-4">Nama</th>
+                            <th class="py-3 px-4">Nama Toko</th>
                             <th class="py-3 px-4">Tanggal</th>
-                            <th class="py-3 px-4">Jumlah Pengeluaran</th>
+                            <th class="py-3 px-4">Alamat</th>
+                            <th class="py-3 px-4">Total</th>
+                            <th class="py-3 px-4">Akurasi OCR</th>
+                            <th class="py-3 px-4">Teks Mentah</th>
                             <th class="py-3 px-4">Foto Nota</th>
                             <th class="py-3 px-4">Aksi</th>
                         </tr>
@@ -138,16 +149,13 @@
                         <tr>
                             <td class="py-3 px-4">{{ $loop->iteration }}</td>
                             <td class="py-3 px-4">
-                                <span class="fw-medium">{{ $transaction->nomor_tagihan }}</span>
-                            </td>
-                            <td class="py-3 px-4">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-sm bg-danger bg-opacity-10 rounded-circle me-2">
                                         <span class="avatar-title text-danger">
-                                            {{ substr($transaction->nama_customer, 0, 1) }}
+                                            {{ substr($transaction->nama_toko, 0, 1) }}
                                         </span>
                                     </div>
-                                    {{ $transaction->nama_customer }}
+                                    {{ $transaction->nama_toko }}
                                 </div>
                             </td>
                             <td class="py-3 px-4">
@@ -155,28 +163,44 @@
                                 {{ \Carbon\Carbon::parse($transaction->transaction_date)->format('d M Y') }}
                             </td>
                             <td class="py-3 px-4">
+                                <span class="text-muted">{{ $transaction->alamat }}</span>
+                            </td>
+                            <td class="py-3 px-4">
                                 <span class="fw-bold text-danger">
                                     Rp {{ number_format($transaction->amount, 0, ',', '.') }}
                                 </span>
                             </td>
                             <td class="py-3 px-4">
+                                @if($transaction->accuracies)
+                                    @foreach(json_decode($transaction->accuracies, true) as $field => $accuracy)
+                                        <span class="badge bg-{{ $accuracy >= 80 ? 'success' : ($accuracy >= 60 ? 'warning' : 'danger') }} accuracy-badge me-1" 
+                                              title="{{ ucfirst($field) }}: {{ $accuracy }}%">
+                                            {{ ucfirst($field) }}: {{ $accuracy }}%
+                                        </span>
+                                    @endforeach
+                                @else
+                                    <span class="badge bg-secondary accuracy-badge">Manual</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4">
+                                @if($transaction->raw_text)
+                                    <span class="raw-text-preview" title="{{ $transaction->raw_text }}">
+                                        {{ $transaction->raw_text }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4">
                                 @if ($transaction->receipt)
-                                    <div class="position-relative receipt-preview">
-                                        <a href="{{ asset('storage/' . $transaction->receipt) }}" 
-                                           target="_blank" 
-                                           class="d-block">
-                                            <img src="{{ asset('storage/' . $transaction->receipt) }}" 
-                                                 alt="Nota" 
-                                                 class="receipt-image">
-                                        </a>
-                                        <a href="{{ asset('storage/' . $transaction->receipt) }}" 
-                                           download 
-                                           class="btn btn-sm btn-success mt-2">
-                                            <i class="fas fa-download me-1"></i>Download
-                                        </a>
+                                    <div class="receipt-preview">
+                                        <img src="{{ asset('storage/' . $transaction->receipt) }}" 
+                                             alt="Nota" 
+                                             class="receipt-image"
+                                             onclick="showImage(this.src)">
                                     </div>
                                 @else
-                                    <span class="text-muted fst-italic">Tidak ada nota</span>
+                                    <span class="text-muted">-</span>
                                 @endif
                             </td>
                             <td class="py-3 px-4">
@@ -208,6 +232,21 @@
         </div>
     </div>
 </div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Preview Nota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img src="" id="modalImage" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -227,7 +266,7 @@
                 "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
             },
             "columnDefs": [
-                { "orderable": false, "targets": [6] } // Kolom aksi tidak bisa diurutkan
+                { "orderable": false, "targets": [5, 6, 7, 8] } // Kolom yang tidak bisa diurutkan
             ],
             "order": [[0, 'asc']], // Urutkan berdasarkan kolom pertama secara ascending
             "pageLength": 10, // Jumlah data per halaman
@@ -248,47 +287,16 @@
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                fetch("{{ url('/transaksi/delete') }}/" + transactionId, {
-                    method: "DELETE",
-                    headers: {
-                        "X-CSRF-TOKEN": csrfToken
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Swal.fire({
-                            icon: "success",
-                            title: "✅ Berhasil!",
-                            text: "Transaksi berhasil dihapus.",
-                            confirmButtonColor: "#28a745",
-                            timer: 2000,
-                            timerProgressBar: true
-                        }).then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: "error",
-                            title: "❌ Gagal!",
-                            text: "Terjadi kesalahan saat menghapus transaksi.",
-                            confirmButtonColor: "#dc3545"
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    Swal.fire({
-                        icon: "error",
-                        title: "❌ Kesalahan Server",
-                        text: "Tidak dapat menghapus transaksi saat ini.",
-                        confirmButtonColor: "#dc3545"
-                    });
-                });
+                // Submit form delete
+                document.getElementById('delete-form-' + transactionId).submit();
             }
         });
+    }
+
+    function showImage(src) {
+        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+        document.getElementById('modalImage').src = src;
+        modal.show();
     }
 </script>
 @endpush

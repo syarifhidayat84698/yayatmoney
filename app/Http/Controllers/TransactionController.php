@@ -18,10 +18,10 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'nama_toko' => 'required|string|max:255',
+            'alamat' => 'required|string',
             'amount' => 'required|numeric',
             'date' => 'required|date',
-            'description' => 'nullable|string',
-            'sumber' => 'required|string|max:255', // Validasi untuk sumber
             'receipt' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -33,11 +33,11 @@ class TransactionController extends Controller
 
         // Menyimpan transaksi
         Transaction::create([
-            'user_id' => Auth::id(), // Mengaitkan dengan pengguna yang sedang login
+            'user_id' => Auth::id(),
+            'nama_toko' => $request->nama_toko,
+            'alamat' => $request->alamat,
             'amount' => $request->amount,
-            'type' => 'outcome', // Anda bisa menyesuaikan ini jika ada pilihan
-            'description' => $request->description,
-            'sumber' => $request->sumber, // Simpan sumber
+            'type' => 'outcome',
             'transaction_date' => $request->date,
             'receipt' => $receiptPath,
         ]);
@@ -51,38 +51,42 @@ class TransactionController extends Controller
         $transactions = Transaction::where('user_id', Auth::id())
             ->where('type', 'outcome')
             ->orderBy('transaction_date', 'desc')
-            ->paginate(10); // Pagination 10 per page
+            ->paginate(10);
         return view('admin.transaksi.pemasukan.index', compact('transactions'));
     }
 
     // Metode untuk menampilkan form edit transaksi
     public function edit($id)
     {
-        $transaction = Transaction::findOrFail($id); // Ambil transaksi berdasarkan ID
-        return view('admin.transaksi.pemasukan.edit', compact('transaction')); // Kembalikan view edit dengan data transaksi
+        $transaction = Transaction::findOrFail($id);
+        return view('admin.transaksi.pemasukan.edit', compact('transaction'));
     }
 
     // Metode untuk memperbarui data transaksi
     public function update(Request $request, $id)
     {
         $request->validate([
+            'nama_toko' => 'required|string|max:255',
+            'alamat' => 'required|string',
             'amount' => 'required|numeric',
             'date' => 'required|date',
             'receipt' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $transaction = Transaction::findOrFail($id); // Ambil transaksi berdasarkan ID
+        $transaction = Transaction::findOrFail($id);
 
         // Menyimpan file jika ada
-        $receiptPath = $transaction->receipt; // Simpan path lama
+        $receiptPath = $transaction->receipt;
         if ($request->hasFile('receipt')) {
             $receiptPath = $request->file('receipt')->store('receipts', 'public');
         }
 
         // Memperbarui transaksi
         $transaction->update([
+            'nama_toko' => $request->nama_toko,
+            'alamat' => $request->alamat,
             'amount' => $request->amount,
-            'type' => 'outcome', // Anda bisa menyesuaikan ini jika ada pilihan
+            'type' => 'outcome',
             'transaction_date' => $request->date,
             'receipt' => $receiptPath,
         ]);
